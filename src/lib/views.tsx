@@ -131,49 +131,132 @@ export function PhotoHero() {
       style={{
         position: "relative",
         marginBottom: 40,
-        padding: "32px 36px",
+        padding: "56px 64px",
         background: PALETTE.cream,
-        borderRadius: 28,
-        boxShadow: "0 18px 40px rgba(45,31,21,.18)",
+        borderRadius: 36,
+        boxShadow: "0 26px 60px rgba(45,31,21,.22)",
         display: "grid",
-        gridTemplateColumns: "minmax(220px, 320px) 1fr",
-        gap: 36,
+        gridTemplateColumns: "minmax(340px, 480px) 1fr",
+        gap: 56,
         alignItems: "center",
         overflow: "hidden",
+        minHeight: "calc(100vh - 160px)",
       }}
     >
       <div
         style={{
           background: "#fff",
-          padding: "14px 14px 56px",
-          borderRadius: 6,
+          padding: "20px 20px 80px",
+          borderRadius: 8,
           transform: "rotate(-2.5deg)",
-          boxShadow: "0 24px 50px rgba(45,31,21,.30), 0 0 0 1px rgba(45,31,21,.08)",
+          boxShadow:
+            "0 36px 70px rgba(45,31,21,.34), 0 0 0 1px rgba(45,31,21,.08)",
           position: "relative",
           justifySelf: "center",
-          width: 280,
+          width: 440,
         }}
       >
-        <div style={{ position: "relative", width: 252, height: 252, borderRadius: 3, overflow: "hidden" }}>
-          <Image src="/bookclub.jpeg" alt="Pedro & Laura" fill sizes="280px" priority style={{ objectFit: "cover" }} />
+        <div
+          style={{
+            position: "relative",
+            width: 400,
+            height: 400,
+            borderRadius: 4,
+            overflow: "hidden",
+          }}
+        >
+          <Image
+            src="/bookclub.jpeg"
+            alt="Pedro & Laura"
+            fill
+            sizes="440px"
+            priority
+            style={{ objectFit: "cover" }}
+          />
         </div>
-        <div className="pbc-hand" style={{ position: "absolute", bottom: 12, left: 0, right: 0, textAlign: "center", fontSize: 26, color: PALETTE.espresso }}>the pooks ♡</div>
-        <div style={{ position: "absolute", top: -10, left: "38%", width: 70, height: 22, background: "rgba(212,165,116,.7)", transform: "rotate(-6deg)", boxShadow: "0 2px 6px rgba(0,0,0,.15)" }} />
+        <div
+          className="pbc-hand"
+          style={{
+            position: "absolute",
+            bottom: 18,
+            left: 0,
+            right: 0,
+            textAlign: "center",
+            fontSize: 40,
+            color: PALETTE.espresso,
+          }}
+        >
+          the pooks ♡
+        </div>
+        <div
+          style={{
+            position: "absolute",
+            top: -14,
+            left: "38%",
+            width: 100,
+            height: 30,
+            background: "rgba(212,165,116,.7)",
+            transform: "rotate(-6deg)",
+            boxShadow: "0 2px 6px rgba(0,0,0,.15)",
+          }}
+        />
       </div>
 
       <div>
-        <div className="pbc-hand" style={{ fontSize: 26, color: PALETTE.taupeDeep, marginBottom: 2 }}>welcome to</div>
-        <h1 className="pbc-display" style={{ fontSize: 96, color: PALETTE.espresso, lineHeight: 0.88, margin: 0 }}>
+        <div
+          className="pbc-hand"
+          style={{ fontSize: 40, color: PALETTE.taupeDeep, marginBottom: 6 }}
+        >
+          welcome to
+        </div>
+        <h1
+          className="pbc-display"
+          style={{
+            fontSize: "clamp(96px, 11vw, 168px)",
+            color: PALETTE.espresso,
+            lineHeight: 0.88,
+            margin: 0,
+          }}
+        >
           Pookers<br />bookclub
         </h1>
-        <div className="pbc-serif" style={{ fontSize: 18, fontStyle: "italic", color: PALETTE.midBrown, marginTop: 16, maxWidth: 480, lineHeight: 1.45 }}>
-          a tiny book club for two. each month we agree on a topic. {readers[0].name} picks a book for {readers[1].name}.
-          {" "}{readers[1].name} picks a book for {readers[0].name}. we read, we talk, we rate.
+        <div
+          className="pbc-serif"
+          style={{
+            fontSize: 22,
+            fontStyle: "italic",
+            color: PALETTE.midBrown,
+            marginTop: 24,
+            maxWidth: 560,
+            lineHeight: 1.5,
+          }}
+        >
+          a tiny book club for two. each month we agree on a topic.{" "}
+          {readers[0].name} picks a book for {readers[1].name}.{" "}
+          {readers[1].name} picks a book for {readers[0].name}. we read, we
+          talk, we rate.
         </div>
-        <div style={{ marginTop: 20, display: "flex", alignItems: "center", gap: 14 }}>
-          <Avatar reader={readers[0]} size={32} ring />
-          <div style={{ marginLeft: -10 }}><Avatar reader={readers[1]} size={32} ring /></div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: PALETTE.taupeDark, letterSpacing: ".08em", textTransform: "uppercase" }}>
+        <div
+          style={{
+            marginTop: 28,
+            display: "flex",
+            alignItems: "center",
+            gap: 16,
+          }}
+        >
+          <Avatar reader={readers[0]} size={44} ring />
+          <div style={{ marginLeft: -12 }}>
+            <Avatar reader={readers[1]} size={44} ring />
+          </div>
+          <div
+            style={{
+              fontSize: 14,
+              fontWeight: 700,
+              color: PALETTE.taupeDark,
+              letterSpacing: ".1em",
+              textTransform: "uppercase",
+            }}
+          >
             {readers[0].name} &amp; {readers[1].name} · since May 2026
           </div>
         </div>
