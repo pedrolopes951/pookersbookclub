@@ -136,11 +136,11 @@ export function PhotoHero() {
         borderRadius: 36,
         boxShadow: "0 26px 60px rgba(45,31,21,.22)",
         display: "grid",
-        gridTemplateColumns: "minmax(340px, 480px) 1fr",
-        gap: 56,
+        gridTemplateColumns: "minmax(520px, 760px) 1fr",
+        gap: 64,
         alignItems: "center",
         overflow: "hidden",
-        minHeight: "calc(100vh - 160px)",
+        minHeight: "calc(100vh - 120px)",
       }}
     >
       <div
@@ -153,14 +153,14 @@ export function PhotoHero() {
             "0 36px 70px rgba(45,31,21,.34), 0 0 0 1px rgba(45,31,21,.08)",
           position: "relative",
           justifySelf: "center",
-          width: 440,
+          width: 680,
         }}
       >
         <div
           style={{
             position: "relative",
-            width: 400,
-            height: 400,
+            width: 632,
+            height: 632,
             borderRadius: 4,
             overflow: "hidden",
           }}
@@ -169,7 +169,7 @@ export function PhotoHero() {
             src="/bookclub.jpeg"
             alt="Pedro & Laura"
             fill
-            sizes="440px"
+            sizes="680px"
             priority
             style={{ objectFit: "cover" }}
           />
@@ -178,11 +178,11 @@ export function PhotoHero() {
           className="pbc-hand"
           style={{
             position: "absolute",
-            bottom: 18,
+            bottom: 22,
             left: 0,
             right: 0,
             textAlign: "center",
-            fontSize: 40,
+            fontSize: 56,
             color: PALETTE.espresso,
           }}
         >
@@ -193,8 +193,8 @@ export function PhotoHero() {
             position: "absolute",
             top: -14,
             left: "38%",
-            width: 100,
-            height: 30,
+            width: 140,
+            height: 38,
             background: "rgba(212,165,116,.7)",
             transform: "rotate(-6deg)",
             boxShadow: "0 2px 6px rgba(0,0,0,.15)",
@@ -212,7 +212,7 @@ export function PhotoHero() {
         <h1
           className="pbc-display"
           style={{
-            fontSize: "clamp(96px, 11vw, 168px)",
+            fontSize: "clamp(72px, 7vw, 120px)",
             color: PALETTE.espresso,
             lineHeight: 0.88,
             margin: 0,
