@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pookers Bookclub
 
-## Getting Started
+Pedro & Laura's monthly two-book bookclub.
 
-First, run the development server:
+**The rule:** every month we pick a topic together. Pedro chooses a book for Laura. Laura chooses a book for Pedro.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Adding a new month
+
+Edit `src/data/books.ts`. Set the previous month's `status` to `"past"` and add a new entry with `status: "current"`:
+
+```ts
+{
+  id: "2026-06",
+  label: "June 2026",
+  topic: "Cold War spy thrillers",
+  status: "current",
+  pedroReads: {
+    title: "Tinker Tailor Soldier Spy",
+    author: "John le Carré",
+    pages: 384,
+    currentPage: 0,
+  },
+  lauraReads: {
+    title: "...",
+    author: "...",
+    pages: 0,
+    currentPage: 0,
+  },
+}
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Optional fields per book: `rating` (1–5), `notes`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Local dev
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm install
+npm run dev
+```
 
-## Learn More
+## Deploy to Vercel
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Push this repo to GitHub.
+2. Go to [vercel.com/new](https://vercel.com/new), import the repo.
+3. Defaults are fine (Next.js detected automatically). Click deploy.
+4. To update the site: edit `src/data/books.ts`, commit, push — Vercel auto-deploys.
