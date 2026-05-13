@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Bagel_Fat_One, Nunito, Lora, Caveat } from "next/font/google";
 import "./globals.css";
+import AppShell from "@/components/app-shell";
 
 const bagel = Bagel_Fat_One({
   variable: "--font-display",
@@ -42,7 +43,9 @@ export default function RootLayout({
       lang="en"
       className={`${bagel.variable} ${nunito.variable} ${lora.variable} ${caveat.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-[#A48871] text-[#2D1F15]">{children}</body>
+      <body className="min-h-full bg-[#A48871] text-[#2D1F15]">
+        <AppShell>{children}</AppShell>
+      </body>
     </html>
   );
 }
