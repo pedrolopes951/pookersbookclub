@@ -6,18 +6,20 @@ import {
   PALETTE,
   readers,
   shelfMonths,
-  type Book,
   type Reader,
-  type NoteEntry,
-  type NextTopic,
 } from "@/data/books";
 import {
-  type MonthState,
-  type DiscussionState,
+  type AppBook,
+  type AppMonth,
+  type AppNote,
+  type AppPrompt,
+  type AppTopic,
   formatDateLabel,
   formatTimeLabel,
   toDateTimeLocalValue,
 } from "@/lib/state";
+
+// ---- atoms -----------------------------------------------------------------
 
 export function Avatar({
   reader,
@@ -59,7 +61,7 @@ export function BookCover({
   h = 180,
   tilt = 0,
 }: {
-  book: Book;
+  book: AppBook;
   w?: number;
   h?: number;
   tilt?: number;
@@ -125,6 +127,8 @@ function Stat({ label, value }: { label: string; value: number }) {
   );
 }
 
+// ---- PhotoHero (landing) ---------------------------------------------------
+
 export function PhotoHero() {
   return (
     <section
@@ -156,107 +160,25 @@ export function PhotoHero() {
           width: 680,
         }}
       >
-        <div
-          style={{
-            position: "relative",
-            width: 632,
-            height: 632,
-            borderRadius: 4,
-            overflow: "hidden",
-          }}
-        >
-          <Image
-            src="/bookclub.jpeg"
-            alt="Pedro & Laura"
-            fill
-            sizes="680px"
-            priority
-            style={{ objectFit: "cover" }}
-          />
+        <div style={{ position: "relative", width: 632, height: 632, borderRadius: 4, overflow: "hidden" }}>
+          <Image src="/bookclub.jpeg" alt="Pedro & Laura" fill sizes="680px" priority style={{ objectFit: "cover" }} />
         </div>
-        <div
-          className="pbc-hand"
-          style={{
-            position: "absolute",
-            bottom: 22,
-            left: 0,
-            right: 0,
-            textAlign: "center",
-            fontSize: 56,
-            color: PALETTE.espresso,
-          }}
-        >
-          the pooks ♡
-        </div>
-        <div
-          style={{
-            position: "absolute",
-            top: -14,
-            left: "38%",
-            width: 140,
-            height: 38,
-            background: "rgba(212,165,116,.7)",
-            transform: "rotate(-6deg)",
-            boxShadow: "0 2px 6px rgba(0,0,0,.15)",
-          }}
-        />
+        <div className="pbc-hand" style={{ position: "absolute", bottom: 22, left: 0, right: 0, textAlign: "center", fontSize: 56, color: PALETTE.espresso }}>the pooks ♡</div>
+        <div style={{ position: "absolute", top: -14, left: "38%", width: 140, height: 38, background: "rgba(212,165,116,.7)", transform: "rotate(-6deg)", boxShadow: "0 2px 6px rgba(0,0,0,.15)" }} />
       </div>
 
       <div>
-        <div
-          className="pbc-hand"
-          style={{ fontSize: 40, color: PALETTE.taupeDeep, marginBottom: 6 }}
-        >
-          welcome to
-        </div>
-        <h1
-          className="pbc-display"
-          style={{
-            fontSize: "clamp(72px, 7vw, 120px)",
-            color: PALETTE.espresso,
-            lineHeight: 0.88,
-            margin: 0,
-          }}
-        >
+        <div className="pbc-hand" style={{ fontSize: 40, color: PALETTE.taupeDeep, marginBottom: 6 }}>welcome to</div>
+        <h1 className="pbc-display" style={{ fontSize: "clamp(72px, 7vw, 120px)", color: PALETTE.espresso, lineHeight: 0.88, margin: 0 }}>
           Pookers<br />bookclub
         </h1>
-        <div
-          className="pbc-serif"
-          style={{
-            fontSize: 22,
-            fontStyle: "italic",
-            color: PALETTE.midBrown,
-            marginTop: 24,
-            maxWidth: 560,
-            lineHeight: 1.5,
-          }}
-        >
-          a tiny book club for two. each month we agree on a topic.{" "}
-          {readers[0].name} picks a book for {readers[1].name}.{" "}
-          {readers[1].name} picks a book for {readers[0].name}. we read, we
-          talk, we rate.
+        <div className="pbc-serif" style={{ fontSize: 22, fontStyle: "italic", color: PALETTE.midBrown, marginTop: 24, maxWidth: 560, lineHeight: 1.5 }}>
+          a tiny book club for two. each month we agree on a topic.{" "}{readers[0].name} picks a book for {readers[1].name}.{" "}{readers[1].name} picks a book for {readers[0].name}. we read, we talk, we rate.
         </div>
-        <div
-          style={{
-            marginTop: 28,
-            display: "flex",
-            alignItems: "center",
-            gap: 16,
-          }}
-        >
+        <div style={{ marginTop: 28, display: "flex", alignItems: "center", gap: 16 }}>
           <Avatar reader={readers[0]} size={44} ring />
-          <div style={{ marginLeft: -12 }}>
-            <Avatar reader={readers[1]} size={44} ring />
-          </div>
-          <div
-            style={{
-              fontSize: 14,
-              fontWeight: 700,
-              color: PALETTE.taupeDark,
-              letterSpacing: ".1em",
-              textTransform: "uppercase",
-            }}
-          >
+          <div style={{ marginLeft: -12 }}><Avatar reader={readers[1]} size={44} ring /></div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: PALETTE.taupeDark, letterSpacing: ".1em", textTransform: "uppercase" }}>
             {readers[0].name} &amp; {readers[1].name} · since May 2026
           </div>
         </div>
@@ -265,21 +187,24 @@ export function PhotoHero() {
   );
 }
 
+// ---- Countdown / MonthStrip -----------------------------------------------
+
+export type MonthUpdate = Partial<Pick<AppMonth, "topic" | "topicShort" | "blurb" | "dateISO" | "dateLabel" | "timeLabel" | "location">>;
+
 export function CountdownTile({
   days,
-  discState,
-  setDiscState,
+  month,
+  onUpdate,
 }: {
   days: number;
-  discState: DiscussionState;
-  setDiscState: React.Dispatch<React.SetStateAction<DiscussionState>>;
+  month: AppMonth;
+  onUpdate: (patch: MonthUpdate) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const onDateChange = (value: string) => {
     if (!value) return;
     const d = new Date(value);
-    setDiscState({
-      ...discState,
+    onUpdate({
       dateISO: d.toISOString(),
       dateLabel: formatDateLabel(d),
       timeLabel: formatTimeLabel(d),
@@ -292,14 +217,14 @@ export function CountdownTile({
       <div>
         {editing ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <input type="datetime-local" value={toDateTimeLocalValue(discState.dateISO)} onChange={(e) => onDateChange(e.target.value)} style={{ border: "1.5px solid rgba(45,31,21,.18)", borderRadius: 8, padding: "4px 8px", fontSize: 12, background: "#fff", color: PALETTE.espresso }} />
-            <input value={discState.location} onChange={(e) => setDiscState({ ...discState, location: e.target.value })} placeholder="location" style={{ border: "1.5px solid rgba(45,31,21,.18)", borderRadius: 8, padding: "4px 8px", fontSize: 12, background: "#fff", color: PALETTE.espresso }} />
+            <input type="datetime-local" value={toDateTimeLocalValue(month.dateISO)} onChange={(e) => onDateChange(e.target.value)} style={{ border: "1.5px solid rgba(45,31,21,.18)", borderRadius: 8, padding: "4px 8px", fontSize: 12, background: "#fff", color: PALETTE.espresso }} />
+            <input value={month.location} onChange={(e) => onUpdate({ location: e.target.value })} placeholder="location" style={{ border: "1.5px solid rgba(45,31,21,.18)", borderRadius: 8, padding: "4px 8px", fontSize: 12, background: "#fff", color: PALETTE.espresso }} />
             <button type="button" onClick={() => setEditing(false)} style={{ marginTop: 2, background: PALETTE.espresso, color: PALETTE.cream, border: "none", borderRadius: 999, padding: "5px 12px", fontWeight: 700, fontSize: 11, cursor: "pointer", alignSelf: "flex-start" }}>done</button>
           </div>
         ) : (
           <>
-            <div style={{ fontSize: 13, color: PALETTE.espresso, fontWeight: 700 }}>days · {discState.dateLabel}</div>
-            <div style={{ fontSize: 12, color: PALETTE.midBrown }}>{discState.timeLabel}</div>
+            <div style={{ fontSize: 13, color: PALETTE.espresso, fontWeight: 700 }}>days · {month.dateLabel}</div>
+            <div style={{ fontSize: 12, color: PALETTE.midBrown }}>{month.timeLabel}</div>
             <button type="button" onClick={() => setEditing(true)} style={{ marginTop: 6, background: PALETTE.espresso, color: PALETTE.cream, border: "none", borderRadius: 999, padding: "5px 12px", fontFamily: "var(--font-body), sans-serif", fontWeight: 700, fontSize: 11, cursor: "pointer", letterSpacing: ".05em" }}>✎ edit date</button>
           </>
         )}
@@ -310,16 +235,12 @@ export function CountdownTile({
 
 export function MonthStrip({
   days,
-  monthState,
-  setMonthState,
-  discState,
-  setDiscState,
+  month,
+  onUpdate,
 }: {
   days: number;
-  monthState: MonthState;
-  setMonthState: React.Dispatch<React.SetStateAction<MonthState>>;
-  discState: DiscussionState;
-  setDiscState: React.Dispatch<React.SetStateAction<DiscussionState>>;
+  month: AppMonth;
+  onUpdate: (patch: MonthUpdate) => void;
 }) {
   const [editing, setEditing] = useState(false);
   return (
@@ -327,42 +248,46 @@ export function MonthStrip({
       <div style={{ flex: 1, minWidth: 320 }}>
         <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: PALETTE.cream, padding: "6px 14px", borderRadius: 999, fontSize: 12, fontWeight: 800, color: PALETTE.taupeDark, letterSpacing: ".1em", textTransform: "uppercase" }}>
           <span style={{ width: 8, height: 8, borderRadius: "50%", background: PALETTE.sage }} />
-          Month {monthState.monthNum} · in progress
+          Month {month.num} · in progress
           <button type="button" onClick={() => setEditing((v) => !v)} style={{ background: "transparent", border: "none", color: PALETTE.taupeDark, cursor: "pointer", fontSize: 13, padding: 0, marginLeft: 4, opacity: 0.7 }} aria-label={editing ? "done editing" : "edit month"}>
             {editing ? "✓" : "✎"}
           </button>
         </div>
         {editing ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12, maxWidth: 580 }}>
-            <input value={monthState.topic} onChange={(e) => setMonthState({ ...monthState, topic: e.target.value })} placeholder="month topic" style={{ fontFamily: "var(--font-display), sans-serif", fontSize: 40, color: PALETTE.espresso, border: "1.5px solid rgba(45,31,21,.18)", borderRadius: 12, padding: "6px 12px", background: "#fff", lineHeight: 1 }} />
-            <textarea value={monthState.blurb} onChange={(e) => setMonthState({ ...monthState, blurb: e.target.value })} rows={3} placeholder="what's this month about?" style={{ fontSize: 15, color: PALETTE.midBrown, border: "1.5px solid rgba(45,31,21,.18)", borderRadius: 12, padding: "8px 12px", background: "#fff", resize: "vertical", fontFamily: "inherit" }} />
+            <input value={month.topic} onChange={(e) => onUpdate({ topic: e.target.value, topicShort: e.target.value })} placeholder="month topic" style={{ fontFamily: "var(--font-display), sans-serif", fontSize: 40, color: PALETTE.espresso, border: "1.5px solid rgba(45,31,21,.18)", borderRadius: 12, padding: "6px 12px", background: "#fff", lineHeight: 1 }} />
+            <textarea value={month.blurb} onChange={(e) => onUpdate({ blurb: e.target.value })} rows={3} placeholder="what's this month about?" style={{ fontSize: 15, color: PALETTE.midBrown, border: "1.5px solid rgba(45,31,21,.18)", borderRadius: 12, padding: "8px 12px", background: "#fff", resize: "vertical", fontFamily: "inherit" }} />
           </div>
         ) : (
           <>
-            <h1 className="pbc-display" style={{ fontSize: 64, color: PALETTE.espresso, margin: "12px 0 4px", lineHeight: 0.95 }}>{monthState.topic}.</h1>
-            <div style={{ fontSize: 16, color: PALETTE.midBrown, maxWidth: 580 }}>{monthState.blurb}</div>
+            <h1 className="pbc-display" style={{ fontSize: 64, color: PALETTE.espresso, margin: "12px 0 4px", lineHeight: 0.95 }}>{month.topic}.</h1>
+            <div style={{ fontSize: 16, color: PALETTE.midBrown, maxWidth: 580 }}>{month.blurb}</div>
           </>
         )}
       </div>
-      <CountdownTile days={days} discState={discState} setDiscState={setDiscState} />
+      <CountdownTile days={days} month={month} onUpdate={onUpdate} />
     </div>
   );
 }
+
+// ---- BookPanel -------------------------------------------------------------
 
 export function BookPanel({
   reader,
   picker,
   book,
+  notesCount,
   onUpdate,
   accent,
 }: {
   reader: Reader;
   picker: Reader;
-  book: Book;
-  onUpdate: (v: number) => void;
+  book: AppBook;
+  notesCount: number;
+  onUpdate: (currentPage: number) => void;
   accent: string;
 }) {
-  const pct = Math.round((book.current / book.pages) * 100);
+  const pct = book.pages > 0 ? Math.round((book.currentPage / book.pages) * 100) : 0;
   return (
     <div style={{ background: PALETTE.paper, borderRadius: 20, padding: 22, boxShadow: "0 12px 28px rgba(45,31,21,.14)", display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -384,18 +309,18 @@ export function BookPanel({
           <div style={{ fontSize: 13, color: PALETTE.taupeDark, fontWeight: 700 }}>{book.author}</div>
           <div style={{ marginTop: 10, display: "flex", gap: 12, fontSize: 12, color: PALETTE.midBrown }}>
             <Stat label="pages" value={book.pages} />
-            <Stat label="read" value={book.current} />
-            <Stat label="notes" value={book.notes} />
+            <Stat label="read" value={book.currentPage} />
+            <Stat label="notes" value={notesCount} />
           </div>
         </div>
         <ProgressRing pct={pct} color={accent} />
       </div>
 
       <div style={{ color: accent }}>
-        <input type="range" min={0} max={book.pages} value={book.current} onChange={(e) => onUpdate(Number(e.target.value))} style={{ width: "100%", accentColor: accent, cursor: "pointer" }} />
+        <input type="range" min={0} max={book.pages} value={book.currentPage} onChange={(e) => onUpdate(Number(e.target.value))} style={{ width: "100%", accentColor: accent, cursor: "pointer" }} />
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: PALETTE.midBrown, marginTop: 2 }}>
-          <span>p. {book.current}</span>
-          <span>{book.pages - book.current} pages left · ~{Math.ceil((book.pages - book.current) / 30)} sittings</span>
+          <span>p. {book.currentPage}</span>
+          <span>{book.pages - book.currentPage} pages left · ~{Math.ceil((book.pages - book.currentPage) / 30)} sittings</span>
           <span>p. {book.pages}</span>
         </div>
       </div>
@@ -403,26 +328,29 @@ export function BookPanel({
   );
 }
 
+// ---- NotesPanel ------------------------------------------------------------
+
 export function NotesPanel({
   notes,
-  setNotes,
+  onAdd,
+  onDelete,
 }: {
-  notes: NoteEntry[];
-  setNotes: React.Dispatch<React.SetStateAction<NoteEntry[]>>;
+  notes: AppNote[];
+  onAdd: (entry: { who: number; page: number; text: string }) => void | Promise<unknown>;
+  onDelete: (id: string) => void | Promise<unknown>;
 }) {
   const [open, setOpen] = useState(false);
   const [who, setWho] = useState<number>(0);
   const [page, setPage] = useState<string>("");
   const [text, setText] = useState<string>("");
   const reset = () => { setPage(""); setText(""); setOpen(false); };
-  const submit = () => {
+  const submit = async () => {
     const trimmed = text.trim();
     if (!trimmed) return;
     const pg = Math.max(0, parseInt(page, 10) || 0);
-    setNotes((prev) => [...prev, { who, page: pg, text: trimmed }]);
+    await onAdd({ who, page: pg, text: trimmed });
     reset();
   };
-  const removeAt = (i: number) => setNotes((prev) => prev.filter((_, idx) => idx !== i));
 
   return (
     <div style={{ background: PALETTE.cream, borderRadius: 20, padding: 22, display: "flex", flexDirection: "column", gap: 12 }}>
@@ -464,17 +392,17 @@ export function NotesPanel({
           <div style={{ fontSize: 12, color: PALETTE.taupeDark, marginTop: 6 }}>jot something as you read.</div>
         </div>
       ) : (
-        notes.map((n, i) => {
+        notes.map((n) => {
           const r = readers[n.who];
           return (
-            <div key={i} style={{ background: PALETTE.paper, borderRadius: 14, padding: "12px 16px", display: "flex", gap: 12, alignItems: "flex-start", borderLeft: `4px solid ${r.color}` }}>
+            <div key={n.id} style={{ background: PALETTE.paper, borderRadius: 14, padding: "12px 16px", display: "flex", gap: 12, alignItems: "flex-start", borderLeft: `4px solid ${r.color}` }}>
               <Avatar reader={r} size={28} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
                   <span style={{ fontWeight: 800, fontSize: 13, color: PALETTE.espresso }}>{r.name}</span>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <span style={{ fontSize: 11, color: PALETTE.taupeDark, fontWeight: 700 }}>p. {n.page}</span>
-                    <button type="button" onClick={() => removeAt(i)} aria-label="delete note" title="delete note" style={{ background: "transparent", border: "none", color: PALETTE.taupeDark, cursor: "pointer", fontSize: 14, lineHeight: 1, padding: 2, opacity: 0.6 }}>×</button>
+                    <button type="button" onClick={() => onDelete(n.id)} aria-label="delete note" title="delete note" style={{ background: "transparent", border: "none", color: PALETTE.taupeDark, cursor: "pointer", fontSize: 14, lineHeight: 1, padding: 2, opacity: 0.6 }}>×</button>
                   </div>
                 </div>
                 <div style={{ fontSize: 13, color: PALETTE.midBrown, marginTop: 2, lineHeight: 1.4 }}>{n.text}</div>
@@ -487,6 +415,8 @@ export function NotesPanel({
   );
 }
 
+// ---- VotePanel -------------------------------------------------------------
+
 function VoteChip({ reader, you }: { reader: Reader; you: boolean }) {
   return (
     <span title={`${reader.name} voted${you ? " (you)" : ""}`} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: reader.color, color: "#fff", borderRadius: 999, padding: "2px 8px 2px 2px", fontSize: 10, fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase", boxShadow: you ? `0 0 0 2px ${PALETTE.paper}, 0 0 0 3px ${reader.color}` : "none" }}>
@@ -498,22 +428,22 @@ function VoteChip({ reader, you }: { reader: Reader; you: boolean }) {
 
 export function VotePanel({
   topics,
-  setTopics,
-  pedroVotes,
-  lauraVotes,
   votingAs,
   setVotingAs,
-  onVote,
+  onToggle,
+  onAddTopic,
+  onUpdateTopic,
+  onDeleteTopic,
   dateLabel,
   wide = false,
 }: {
-  topics: NextTopic[];
-  setTopics: React.Dispatch<React.SetStateAction<NextTopic[]>>;
-  pedroVotes: string[];
-  lauraVotes: string[];
+  topics: AppTopic[];
   votingAs: "p" | "l";
   setVotingAs: React.Dispatch<React.SetStateAction<"p" | "l">>;
-  onVote: (id: string) => void;
+  onToggle: (topicId: string) => void | Promise<unknown>;
+  onAddTopic: (body: { label: string; emoji: string }) => void | Promise<unknown>;
+  onUpdateTopic: (id: string, patch: { label?: string; emoji?: string }) => void | Promise<unknown>;
+  onDeleteTopic: (id: string) => void | Promise<unknown>;
   dateLabel: string;
   wide?: boolean;
 }) {
@@ -522,22 +452,34 @@ export function VotePanel({
   const [addOpen, setAddOpen] = useState(false);
   const [newEmoji, setNewEmoji] = useState("✦");
   const [newLabel, setNewLabel] = useState("");
+  // Local draft for in-place edits — committed on blur/done.
+  const [draft, setDraft] = useState<{ label: string; emoji: string }>({ label: "", emoji: "" });
 
-  const baseTotal = topics.reduce((s, t) => s + t.votes, 0);
-  const extra = pedroVotes.length + lauraVotes.length;
-  const liveTotal = baseTotal + extra || 1;
+  const liveVotesFor = (t: AppTopic) => t.baseVotes + t.voters.length;
+  const liveTotal = topics.reduce((s, t) => s + liveVotesFor(t), 0) || 1;
+  const yourVoteCount = (v: "p" | "l") =>
+    topics.reduce((s, t) => s + (t.voters.includes(v) ? 1 : 0), 0);
 
-  const addTopic = () => {
+  const beginEdit = (t: AppTopic) => {
+    setEditId(t.id);
+    setDraft({ label: t.label, emoji: t.emoji });
+  };
+  const commitEdit = async (t: AppTopic) => {
+    const patch: { label?: string; emoji?: string } = {};
+    if (draft.label !== t.label) patch.label = draft.label;
+    if (draft.emoji !== t.emoji) patch.emoji = draft.emoji;
+    if (Object.keys(patch).length > 0) await onUpdateTopic(t.id, patch);
+    setEditId(null);
+  };
+
+  const submitAdd = async () => {
     const label = newLabel.trim();
     if (!label) return;
-    const id = "t" + Math.random().toString(36).slice(2, 8);
-    setTopics((prev) => [...prev, { id, label, emoji: newEmoji.trim() || "✦", votes: 0 }]);
+    await onAddTopic({ label, emoji: (newEmoji || "").trim() || "✦" });
     setNewLabel("");
     setNewEmoji("✦");
     setAddOpen(false);
   };
-  const removeTopic = (id: string) => setTopics((prev) => prev.filter((t) => t.id !== id));
-  const updateTopic = (id: string, patch: Partial<NextTopic>) => setTopics((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
 
   return (
     <div style={{ background: PALETTE.cream, borderRadius: 20, padding: 22 }}>
@@ -552,10 +494,11 @@ export function VotePanel({
           <span style={{ fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", fontWeight: 800, color: PALETTE.taupeDark }}>voting as</span>
           <div style={{ display: "flex", background: PALETTE.paper, borderRadius: 999, padding: 4, gap: 2 }}>
             {[Pedro, Laura].map((r) => {
-              const isMe = (r.id === "p" ? "p" : "l") === votingAs;
-              const count = r.id === "p" ? pedroVotes.length : lauraVotes.length;
+              const v = r.id as "p" | "l";
+              const isMe = v === votingAs;
+              const count = yourVoteCount(v);
               return (
-                <button key={r.id} onClick={() => setVotingAs(r.id === "p" ? "p" : "l")} style={{ display: "flex", alignItems: "center", gap: 6, background: isMe ? r.color : "transparent", color: isMe ? "#fff" : PALETTE.espresso, border: "none", borderRadius: 999, padding: "4px 12px 4px 4px", cursor: "pointer", fontFamily: "var(--font-body), sans-serif", fontWeight: 800, fontSize: 12, transition: "all .15s" }}>
+                <button key={r.id} onClick={() => setVotingAs(v)} style={{ display: "flex", alignItems: "center", gap: 6, background: isMe ? r.color : "transparent", color: isMe ? "#fff" : PALETTE.espresso, border: "none", borderRadius: 999, padding: "4px 12px 4px 4px", cursor: "pointer", fontFamily: "var(--font-body), sans-serif", fontWeight: 800, fontSize: 12, transition: "all .15s" }}>
                   <Avatar reader={r} size={22} />{r.name}
                   <span style={{ background: isMe ? "rgba(255,255,255,.25)" : "rgba(45,31,21,.08)", borderRadius: 999, padding: "1px 7px", fontSize: 11, fontWeight: 800, marginLeft: 2 }}>{count}</span>
                 </button>
@@ -567,9 +510,9 @@ export function VotePanel({
 
       <div style={{ display: "grid", gridTemplateColumns: wide ? "1fr 1fr" : "1fr", gap: 8 }}>
         {topics.map((t) => {
-          const pedroOn = pedroVotes.includes(t.id);
-          const lauraOn = lauraVotes.includes(t.id);
-          const liveVotes = t.votes + (pedroOn ? 1 : 0) + (lauraOn ? 1 : 0);
+          const pedroOn = t.voters.includes("p");
+          const lauraOn = t.voters.includes("l");
+          const liveVotes = liveVotesFor(t);
           const w = (liveVotes / liveTotal) * 100;
           const youVoted = votingAs === "p" ? pedroOn : lauraOn;
           const editing = editId === t.id;
@@ -579,21 +522,21 @@ export function VotePanel({
               <div style={{ position: "absolute", inset: 0, width: `${w}%`, background: youVoted ? "rgba(164,135,113,.35)" : "rgba(164,135,113,.18)", transition: "width .25s" }} />
               {editing ? (
                 <div style={{ position: "relative", display: "flex", gap: 8, alignItems: "center", padding: "8px 12px" }}>
-                  <input value={t.emoji} onChange={(e) => updateTopic(t.id, { emoji: e.target.value })} style={{ width: 40, textAlign: "center", border: "1.5px solid rgba(45,31,21,.18)", borderRadius: 8, padding: "4px 6px", background: "#fff", color: PALETTE.espresso, fontSize: 14 }} />
-                  <input value={t.label} onChange={(e) => updateTopic(t.id, { label: e.target.value })} autoFocus style={{ flex: 1, border: "1.5px solid rgba(45,31,21,.18)", borderRadius: 8, padding: "4px 10px", background: "#fff", color: PALETTE.espresso, fontSize: 14, fontWeight: 700 }} />
-                  <button type="button" onClick={() => setEditId(null)} style={{ background: PALETTE.espresso, color: PALETTE.cream, border: "none", borderRadius: 999, padding: "5px 12px", fontWeight: 800, fontSize: 11, cursor: "pointer" }}>done</button>
+                  <input value={draft.emoji} onChange={(e) => setDraft({ ...draft, emoji: e.target.value })} style={{ width: 40, textAlign: "center", border: "1.5px solid rgba(45,31,21,.18)", borderRadius: 8, padding: "4px 6px", background: "#fff", color: PALETTE.espresso, fontSize: 14 }} />
+                  <input value={draft.label} onChange={(e) => setDraft({ ...draft, label: e.target.value })} autoFocus onKeyDown={(e) => { if (e.key === "Enter") commitEdit(t); }} style={{ flex: 1, border: "1.5px solid rgba(45,31,21,.18)", borderRadius: 8, padding: "4px 10px", background: "#fff", color: PALETTE.espresso, fontSize: 14, fontWeight: 700 }} />
+                  <button type="button" onClick={() => commitEdit(t)} style={{ background: PALETTE.espresso, color: PALETTE.cream, border: "none", borderRadius: 999, padding: "5px 12px", fontWeight: 800, fontSize: 11, cursor: "pointer" }}>done</button>
                 </div>
               ) : (
                 <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "center", fontWeight: 700, fontSize: 14, gap: 10, padding: "10px 12px 10px 14px" }}>
-                  <button type="button" onClick={() => onVote(t.id)} style={{ flex: 1, display: "flex", alignItems: "center", background: "transparent", border: "none", cursor: "pointer", padding: 0, color: "inherit", font: "inherit", textAlign: "left" }}>
+                  <button type="button" onClick={() => onToggle(t.id)} style={{ flex: 1, display: "flex", alignItems: "center", background: "transparent", border: "none", cursor: "pointer", padding: 0, color: "inherit", font: "inherit", textAlign: "left" }}>
                     <span style={{ marginRight: 8 }}>{t.emoji}</span>{t.label}
                   </button>
                   <span style={{ display: "flex", gap: 4, alignItems: "center" }}>
                     {pedroOn && <VoteChip reader={Pedro} you={votingAs === "p"} />}
                     {lauraOn && <VoteChip reader={Laura} you={votingAs === "l"} />}
                     <span style={{ fontSize: 11, color: PALETTE.taupeDark, fontWeight: 700, opacity: 0.7, marginLeft: 4 }}>{liveVotes}</span>
-                    <button type="button" onClick={() => setEditId(t.id)} aria-label="edit topic" title="edit" style={{ background: "transparent", border: "none", cursor: "pointer", color: PALETTE.taupeDark, fontSize: 13, padding: "2px 4px", opacity: 0.6 }}>✎</button>
-                    <button type="button" onClick={() => removeTopic(t.id)} aria-label="delete topic" title="delete" style={{ background: "transparent", border: "none", cursor: "pointer", color: PALETTE.taupeDark, fontSize: 14, padding: "2px 4px", opacity: 0.6, lineHeight: 1 }}>×</button>
+                    <button type="button" onClick={() => beginEdit(t)} aria-label="edit topic" title="edit" style={{ background: "transparent", border: "none", cursor: "pointer", color: PALETTE.taupeDark, fontSize: 13, padding: "2px 4px", opacity: 0.6 }}>✎</button>
+                    <button type="button" onClick={() => onDeleteTopic(t.id)} aria-label="delete topic" title="delete" style={{ background: "transparent", border: "none", cursor: "pointer", color: PALETTE.taupeDark, fontSize: 14, padding: "2px 4px", opacity: 0.6, lineHeight: 1 }}>×</button>
                   </span>
                 </div>
               )}
@@ -605,9 +548,9 @@ export function VotePanel({
       {addOpen ? (
         <div style={{ marginTop: 10, padding: 12, background: PALETTE.paper, borderRadius: 10, border: `1.5px solid ${PALETTE.taupe}`, display: "flex", gap: 8, alignItems: "center" }}>
           <input value={newEmoji} onChange={(e) => setNewEmoji(e.target.value)} style={{ width: 44, textAlign: "center", border: "1.5px solid rgba(45,31,21,.18)", borderRadius: 8, padding: "6px 8px", background: "#fff", color: PALETTE.espresso }} />
-          <input value={newLabel} onChange={(e) => setNewLabel(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addTopic()} placeholder="new topic…" autoFocus style={{ flex: 1, border: "1.5px solid rgba(45,31,21,.18)", borderRadius: 8, padding: "6px 12px", background: "#fff", color: PALETTE.espresso, fontSize: 14 }} />
+          <input value={newLabel} onChange={(e) => setNewLabel(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submitAdd()} placeholder="new topic…" autoFocus style={{ flex: 1, border: "1.5px solid rgba(45,31,21,.18)", borderRadius: 8, padding: "6px 12px", background: "#fff", color: PALETTE.espresso, fontSize: 14 }} />
           <button type="button" onClick={() => { setAddOpen(false); setNewLabel(""); }} style={{ background: "transparent", color: PALETTE.taupeDark, border: "1.5px solid rgba(45,31,21,.2)", borderRadius: 999, padding: "5px 12px", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>cancel</button>
-          <button type="button" onClick={addTopic} disabled={!newLabel.trim()} style={{ background: newLabel.trim() ? PALETTE.espresso : "rgba(45,31,21,.3)", color: PALETTE.cream, border: "none", borderRadius: 999, padding: "5px 14px", fontWeight: 800, fontSize: 12, cursor: newLabel.trim() ? "pointer" : "not-allowed" }}>add</button>
+          <button type="button" onClick={submitAdd} disabled={!newLabel.trim()} style={{ background: newLabel.trim() ? PALETTE.espresso : "rgba(45,31,21,.3)", color: PALETTE.cream, border: "none", borderRadius: 999, padding: "5px 14px", fontWeight: 800, fontSize: 12, cursor: newLabel.trim() ? "pointer" : "not-allowed" }}>add</button>
         </div>
       ) : (
         <button type="button" onClick={() => setAddOpen(true)} style={{ marginTop: 10, width: "100%", background: "transparent", color: PALETTE.taupeDark, border: `2px dashed ${PALETTE.taupeDeep}`, borderRadius: 10, padding: "8px 14px", fontWeight: 800, fontSize: 13, cursor: "pointer", letterSpacing: ".04em" }}>+ add topic</button>
@@ -617,6 +560,8 @@ export function VotePanel({
     </div>
   );
 }
+
+// ---- ShelfRow / FocusWrap / DiscussionView / ReadersView -------------------
 
 export function ShelfRow() {
   return (
@@ -661,33 +606,46 @@ export function FocusWrap({ eyebrow, title, children }: { eyebrow: string; title
 
 export function DiscussionView({
   days,
-  discState,
-  setDiscState,
-  discPrompts,
-  setDiscPrompts,
+  month,
+  prompts,
+  onUpdateMonth,
+  onAddPrompt,
+  onUpdatePrompt,
+  onDeletePrompt,
 }: {
   days: number;
-  discState: DiscussionState;
-  setDiscState: React.Dispatch<React.SetStateAction<DiscussionState>>;
-  discPrompts: string[];
-  setDiscPrompts: React.Dispatch<React.SetStateAction<string[]>>;
+  month: AppMonth;
+  prompts: AppPrompt[];
+  onUpdateMonth: (patch: MonthUpdate) => void;
+  onAddPrompt: (text: string) => void | Promise<unknown>;
+  onUpdatePrompt: (id: string, text: string) => void | Promise<unknown>;
+  onDeletePrompt: (id: string) => void | Promise<unknown>;
 }) {
   const [editHero, setEditHero] = useState(false);
   const [newPrompt, setNewPrompt] = useState("");
-  const [editIdx, setEditIdx] = useState<number | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+
   const updateDate = (value: string) => {
     if (!value) return;
     const d = new Date(value);
-    setDiscState({ ...discState, dateISO: d.toISOString(), dateLabel: formatDateLabel(d), timeLabel: formatTimeLabel(d) });
+    onUpdateMonth({
+      dateISO: d.toISOString(),
+      dateLabel: formatDateLabel(d),
+      timeLabel: formatTimeLabel(d),
+    });
   };
-  const addPrompt = () => {
+  const submitPrompt = async () => {
     const v = newPrompt.trim();
     if (!v) return;
-    setDiscPrompts((prev) => [...prev, v]);
+    await onAddPrompt(v);
     setNewPrompt("");
   };
-  const updatePrompt = (i: number, v: string) => setDiscPrompts((prev) => prev.map((p, idx) => (idx === i ? v : p)));
-  const removePrompt = (i: number) => setDiscPrompts((prev) => prev.filter((_, idx) => idx !== i));
+  const beginEdit = (p: AppPrompt) => { setEditId(p.id); setDraft(p.text); };
+  const commitEdit = async (p: AppPrompt) => {
+    if (draft.trim() && draft !== p.text) await onUpdatePrompt(p.id, draft);
+    setEditId(null);
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
@@ -701,13 +659,13 @@ export function DiscussionView({
         </div>
         {editHero ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, position: "relative", marginTop: 10, maxWidth: 420 }}>
-            <input type="datetime-local" value={toDateTimeLocalValue(discState.dateISO)} onChange={(e) => updateDate(e.target.value)} style={{ border: "1.5px solid rgba(242,234,224,.3)", borderRadius: 10, padding: "8px 12px", background: "rgba(0,0,0,.25)", color: PALETTE.cream, fontSize: 14, fontWeight: 700 }} />
-            <input value={discState.location} onChange={(e) => setDiscState({ ...discState, location: e.target.value })} placeholder="location" style={{ border: "1.5px solid rgba(242,234,224,.3)", borderRadius: 10, padding: "8px 12px", background: "rgba(0,0,0,.25)", color: PALETTE.cream, fontSize: 14 }} />
+            <input type="datetime-local" value={toDateTimeLocalValue(month.dateISO)} onChange={(e) => updateDate(e.target.value)} style={{ border: "1.5px solid rgba(242,234,224,.3)", borderRadius: 10, padding: "8px 12px", background: "rgba(0,0,0,.25)", color: PALETTE.cream, fontSize: 14, fontWeight: 700 }} />
+            <input value={month.location} onChange={(e) => onUpdateMonth({ location: e.target.value })} placeholder="location" style={{ border: "1.5px solid rgba(242,234,224,.3)", borderRadius: 10, padding: "8px 12px", background: "rgba(0,0,0,.25)", color: PALETTE.cream, fontSize: 14 }} />
           </div>
         ) : (
           <>
-            <div className="pbc-display" style={{ fontSize: 60, color: PALETTE.cream, lineHeight: 0.95, marginTop: 4, position: "relative" }}>{discState.dateLabel}</div>
-            <div style={{ fontSize: 18, color: PALETTE.peach, marginTop: 6, fontWeight: 600, position: "relative" }}>{discState.timeLabel} · {discState.location}</div>
+            <div className="pbc-display" style={{ fontSize: 60, color: PALETTE.cream, lineHeight: 0.95, marginTop: 4, position: "relative" }}>{month.dateLabel}</div>
+            <div style={{ fontSize: 18, color: PALETTE.peach, marginTop: 6, fontWeight: 600, position: "relative" }}>{month.timeLabel} · {month.location}</div>
           </>
         )}
         <div style={{ display: "flex", gap: 10, marginTop: 22, position: "relative", flexWrap: "wrap" }}>
@@ -726,26 +684,26 @@ export function DiscussionView({
         </div>
 
         <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "center" }}>
-          <input value={newPrompt} onChange={(e) => setNewPrompt(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addPrompt()} placeholder="add a prompt…" style={{ flex: 1, border: "1.5px solid rgba(45,31,21,.18)", borderRadius: 10, padding: "8px 12px", background: "#fff", color: PALETTE.espresso, fontSize: 14 }} />
-          <button type="button" onClick={addPrompt} disabled={!newPrompt.trim()} style={{ background: newPrompt.trim() ? PALETTE.espresso : "rgba(45,31,21,.3)", color: PALETTE.cream, border: "none", borderRadius: 999, padding: "8px 16px", fontWeight: 800, fontSize: 13, cursor: newPrompt.trim() ? "pointer" : "not-allowed" }}>+ add prompt</button>
+          <input value={newPrompt} onChange={(e) => setNewPrompt(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submitPrompt()} placeholder="add a prompt…" style={{ flex: 1, border: "1.5px solid rgba(45,31,21,.18)", borderRadius: 10, padding: "8px 12px", background: "#fff", color: PALETTE.espresso, fontSize: 14 }} />
+          <button type="button" onClick={submitPrompt} disabled={!newPrompt.trim()} style={{ background: newPrompt.trim() ? PALETTE.espresso : "rgba(45,31,21,.3)", color: PALETTE.cream, border: "none", borderRadius: 999, padding: "8px 16px", fontWeight: 800, fontSize: 13, cursor: newPrompt.trim() ? "pointer" : "not-allowed" }}>+ add prompt</button>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
-          {discPrompts.map((q, i) => {
-            const editing = editIdx === i;
+          {prompts.map((p, i) => {
+            const editing = editId === p.id;
             return (
-              <div key={i} style={{ background: PALETTE.paper, borderRadius: 14, padding: "16px 18px", borderLeft: `4px solid ${PALETTE.peach}`, position: "relative" }}>
+              <div key={p.id} style={{ background: PALETTE.paper, borderRadius: 14, padding: "16px 18px", borderLeft: `4px solid ${PALETTE.peach}`, position: "relative" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                   <div style={{ fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: PALETTE.taupeDark, fontWeight: 800 }}>prompt #{i + 1}</div>
                   <div style={{ display: "flex", gap: 4 }}>
-                    <button type="button" onClick={() => setEditIdx(editing ? null : i)} title={editing ? "done" : "edit"} aria-label={editing ? "done editing" : "edit prompt"} style={{ background: "transparent", border: "none", color: PALETTE.taupeDark, cursor: "pointer", fontSize: 12, opacity: 0.6, padding: 2 }}>{editing ? "✓" : "✎"}</button>
-                    <button type="button" onClick={() => removePrompt(i)} title="delete prompt" aria-label="delete prompt" style={{ background: "transparent", border: "none", color: PALETTE.taupeDark, cursor: "pointer", fontSize: 14, opacity: 0.6, padding: 2, lineHeight: 1 }}>×</button>
+                    <button type="button" onClick={() => editing ? commitEdit(p) : beginEdit(p)} title={editing ? "done" : "edit"} aria-label={editing ? "done editing" : "edit prompt"} style={{ background: "transparent", border: "none", color: PALETTE.taupeDark, cursor: "pointer", fontSize: 12, opacity: 0.6, padding: 2 }}>{editing ? "✓" : "✎"}</button>
+                    <button type="button" onClick={() => onDeletePrompt(p.id)} title="delete prompt" aria-label="delete prompt" style={{ background: "transparent", border: "none", color: PALETTE.taupeDark, cursor: "pointer", fontSize: 14, opacity: 0.6, padding: 2, lineHeight: 1 }}>×</button>
                   </div>
                 </div>
                 {editing ? (
-                  <textarea value={q} onChange={(e) => updatePrompt(i, e.target.value)} autoFocus rows={3} style={{ width: "100%", fontSize: 14, color: PALETTE.midBrown, border: "1.5px solid rgba(45,31,21,.18)", borderRadius: 10, padding: "8px 10px", background: "#fff", resize: "vertical", fontFamily: "inherit" }} />
+                  <textarea value={draft} onChange={(e) => setDraft(e.target.value)} autoFocus rows={3} style={{ width: "100%", fontSize: 14, color: PALETTE.midBrown, border: "1.5px solid rgba(45,31,21,.18)", borderRadius: 10, padding: "8px 10px", background: "#fff", resize: "vertical", fontFamily: "inherit" }} />
                 ) : (
-                  <div style={{ fontSize: 14, color: PALETTE.midBrown, lineHeight: 1.45 }}>{q}</div>
+                  <div style={{ fontSize: 14, color: PALETTE.midBrown, lineHeight: 1.45 }}>{p.text}</div>
                 )}
               </div>
             );

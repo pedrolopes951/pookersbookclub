@@ -1,20 +1,24 @@
 "use client";
 import { FocusWrap, DiscussionView } from "@/lib/views";
-import { daysUntil, useDiscState, usePrompts } from "@/lib/state";
+import { api, daysUntil, useAppState } from "@/lib/state";
 
 export default function DiscussionPage() {
-  const [discState, setDiscState] = useDiscState();
-  const [discPrompts, setDiscPrompts] = usePrompts();
-  const days = daysUntil(new Date(discState.dateISO));
+  const { data } = useAppState();
   return (
     <FocusWrap title="Discussion Night" eyebrow="when we sit down with our tea">
-      <DiscussionView
-        days={days}
-        discState={discState}
-        setDiscState={setDiscState}
-        discPrompts={discPrompts}
-        setDiscPrompts={setDiscPrompts}
-      />
+      {data ? (
+        <DiscussionView
+          days={daysUntil(new Date(data.month.dateISO))}
+          month={data.month}
+          prompts={data.prompts}
+          onUpdateMonth={(p) => api.updateMonth(p)}
+          onAddPrompt={(t) => api.addPrompt(t)}
+          onUpdatePrompt={(id, t) => api.updatePrompt(id, t)}
+          onDeletePrompt={(id) => api.deletePrompt(id)}
+        />
+      ) : (
+        <div className="pbc-hand" style={{ fontSize: 22, color: "#6F5A4A" }}>loading…</div>
+      )}
     </FocusWrap>
   );
 }

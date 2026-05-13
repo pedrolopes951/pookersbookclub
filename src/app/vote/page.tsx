@@ -1,40 +1,27 @@
 "use client";
 import { FocusWrap, VotePanel } from "@/lib/views";
-import {
-  useDiscState,
-  useLauraVotes,
-  usePedroVotes,
-  useTopics,
-  useVotingAs,
-} from "@/lib/state";
+import { api, useAppState, useVotingAs } from "@/lib/state";
 
 export default function VotePage() {
-  const [pedroVotes, setPedroVotes] = usePedroVotes();
-  const [lauraVotes, setLauraVotes] = useLauraVotes();
+  const { data } = useAppState();
   const [votingAs, setVotingAs] = useVotingAs();
-  const [topics, setTopics] = useTopics();
-  const [discState] = useDiscState();
-
-  const onVote = (topicId: string) => {
-    const toggle = (votes: string[]) =>
-      votes.includes(topicId) ? votes.filter((v) => v !== topicId) : [...votes, topicId];
-    if (votingAs === "p") setPedroVotes(toggle);
-    else setLauraVotes(toggle);
-  };
-
   return (
     <FocusWrap title="Vote the next topic" eyebrow="june is wide open">
-      <VotePanel
-        topics={topics}
-        setTopics={setTopics}
-        pedroVotes={pedroVotes}
-        lauraVotes={lauraVotes}
-        votingAs={votingAs}
-        setVotingAs={setVotingAs}
-        onVote={onVote}
-        dateLabel={discState.dateLabel}
-        wide
-      />
+      {data ? (
+        <VotePanel
+          topics={data.topics}
+          votingAs={votingAs}
+          setVotingAs={setVotingAs}
+          onToggle={(id) => api.toggleVote(id, votingAs)}
+          onAddTopic={(b) => api.addTopic(b)}
+          onUpdateTopic={(id, patch) => api.updateTopic(id, patch)}
+          onDeleteTopic={(id) => api.deleteTopic(id)}
+          dateLabel={data.month.dateLabel}
+          wide
+        />
+      ) : (
+        <div className="pbc-hand" style={{ fontSize: 22, color: "#6F5A4A" }}>loading…</div>
+      )}
     </FocusWrap>
   );
 }

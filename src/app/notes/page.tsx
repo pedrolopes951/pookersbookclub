@@ -1,12 +1,20 @@
 "use client";
 import { FocusWrap, NotesPanel } from "@/lib/views";
-import { useNotes } from "@/lib/state";
+import { api, useAppState } from "@/lib/state";
 
 export default function NotesPage() {
-  const [notes, setNotes] = useNotes();
+  const { data } = useAppState();
   return (
     <FocusWrap title="Discussion Notebook" eyebrow="every page worth talking about">
-      <NotesPanel notes={notes} setNotes={setNotes} />
+      {data ? (
+        <NotesPanel
+          notes={data.notes}
+          onAdd={(entry) => api.addNote(entry)}
+          onDelete={(id) => api.deleteNote(id)}
+        />
+      ) : (
+        <div className="pbc-hand" style={{ fontSize: 22, color: "#6F5A4A" }}>loading…</div>
+      )}
     </FocusWrap>
   );
 }

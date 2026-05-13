@@ -1,33 +1,155 @@
 "use client";
 import { useEffect, useState } from "react";
 import type React from "react";
-import {
-  books,
-  notes as notesData,
-  nextTopics,
-  month as monthSeed,
-  discussion as discussionSeed,
-  prompts as promptsSeed,
-  type NoteEntry,
-  type NextTopic,
-} from "@/data/books";
+import useSWR, { mutate as globalMutate } from "swr";
 
-export type MonthState = {
+// ---- Domain types (mirrors /api/state shape) -------------------------------
+
+export type AppMonth = {
+  id: string;
+  num: number;
   name: string;
   topic: string;
   topicShort: string;
-  monthNum: number;
   blurb: string;
-};
-
-export type DiscussionState = {
   dateISO: string;
   dateLabel: string;
   timeLabel: string;
   location: string;
+  winnerLabel: string | null;
 };
 
-export function useLocalStorage<T>(
+export type AppBook = {
+  id: string;
+  readerId: "p" | "l";
+  pickerId: "p" | "l";
+  title: string;
+  subtitle: string;
+  author: string;
+  year: number;
+  pages: number;
+  currentPage: number;
+  coverHue: string;
+  coverAccent: string;
+  coverGlyph: string;
+};
+
+export type AppNote = {
+  id: string;
+  who: number;
+  page: number;
+  text: string;
+};
+
+export type AppTopic = {
+  id: string;
+  label: string;
+  emoji: string;
+  baseVotes: number;
+  position: number;
+  voters: ("p" | "l")[];
+};
+
+export type AppPrompt = {
+  id: string;
+  position: number;
+  text: string;
+};
+
+export type AppState = {
+  month: AppMonth;
+  books: AppBook[];
+  notes: AppNote[];
+  topics: AppTopic[];
+  prompts: AppPrompt[];
+};
+
+// ---- SWR fetcher + main hook -----------------------------------------------
+
+const STATE_KEY = "/api/state";
+
+const fetcher = async (url: string) => {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("fetch failed");
+  return res.json();
+};
+
+export function useAppState() {
+  const { data, error, isLoading, mutate } = useSWR<AppState>(STATE_KEY, fetcher, {
+    refreshInterval: 4000,
+    revalidateOnFocus: true,
+    dedupingInterval: 1000,
+  });
+  return { data, error, isLoading, refresh: mutate };
+}
+
+export const refreshState = () => globalMutate(STATE_KEY);
+
+// ---- Mutation helpers ------------------------------------------------------
+
+const post = async (url: string, body: unknown) => {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`POST ${url} failed: ${res.status}`);
+  return res.json();
+};
+
+const patch = async (url: string, body: unknown) => {
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`PATCH ${url} failed: ${res.status}`);
+  return res.json();
+};
+
+const del = async (url: string) => {
+  const res = await fetch(url, { method: "DELETE" });
+  if (!res.ok) throw new Error(`DELETE ${url} failed: ${res.status}`);
+  return res.json();
+};
+
+export const api = {
+  addNote: (body: { who: number; page: number; text: string }) =>
+    post("/api/notes", body).then(refreshState),
+  deleteNote: (id: string) => del(`/api/notes/${id}`).then(refreshState),
+
+  addTopic: (body: { label: string; emoji: string }) =>
+    post("/api/topics", body).then(refreshState),
+  updateTopic: (id: string, body: { label?: string; emoji?: string }) =>
+    patch(`/api/topics/${id}`, body).then(refreshState),
+  deleteTopic: (id: string) => del(`/api/topics/${id}`).then(refreshState),
+
+  toggleVote: (topicId: string, voter: "p" | "l") =>
+    post("/api/votes/toggle", { topicId, voter }).then(refreshState),
+
+  addPrompt: (text: string) =>
+    post("/api/prompts", { text }).then(refreshState),
+  updatePrompt: (id: string, text: string) =>
+    patch(`/api/prompts/${id}`, { text }).then(refreshState),
+  deletePrompt: (id: string) => del(`/api/prompts/${id}`).then(refreshState),
+
+  updateBookProgress: (id: string, currentPage: number) =>
+    patch(`/api/books/${id}`, { currentPage }).then(refreshState),
+
+  updateMonth: (body: Partial<{
+    topic: string;
+    topicShort: string;
+    blurb: string;
+    dateISO: string;
+    dateLabel: string;
+    timeLabel: string;
+    location: string;
+  }>) => patch("/api/month", body).then(refreshState),
+};
+
+// ---- Local-only UI preferences ---------------------------------------------
+
+function useLocalStorage<T>(
   key: string,
   initial: T
 ): [T, React.Dispatch<React.SetStateAction<T>>] {
@@ -49,31 +171,10 @@ export function useLocalStorage<T>(
   return [value, setValue];
 }
 
-export const useNotes = () =>
-  useLocalStorage<NoteEntry[]>("pbc-notes", notesData);
-export const useTopics = () =>
-  useLocalStorage<NextTopic[]>("pbc-topics", nextTopics);
-export const usePedroVotes = () =>
-  useLocalStorage<string[]>("pbc-votes-p", []);
-export const useLauraVotes = () =>
-  useLocalStorage<string[]>("pbc-votes-l", ["t2"]);
 export const useVotingAs = () =>
   useLocalStorage<"p" | "l">("pbc-voting-as", "p");
-export const useReadBookA = () =>
-  useLocalStorage<number>("pbc-read-a", books[0].current);
-export const useReadBookB = () =>
-  useLocalStorage<number>("pbc-read-b", books[1].current);
-export const usePrompts = () =>
-  useLocalStorage<string[]>("pbc-prompts", promptsSeed);
-export const useMonthState = () =>
-  useLocalStorage<MonthState>("pbc-month", monthSeed);
-export const useDiscState = () =>
-  useLocalStorage<DiscussionState>("pbc-disc", {
-    dateISO: discussionSeed.date.toISOString(),
-    dateLabel: discussionSeed.dateLabel,
-    timeLabel: discussionSeed.timeLabel,
-    location: discussionSeed.location,
-  });
+
+// ---- Date helpers ----------------------------------------------------------
 
 export function daysUntil(date: Date): number {
   const ms = new Date(date).getTime() - Date.now();
