@@ -83,7 +83,41 @@ export function useAppState() {
   return { data, error, isLoading, refresh: mutate };
 }
 
-export const refreshState = () => globalMutate(STATE_KEY);
+export const refreshState = () =>
+  Promise.all([globalMutate(STATE_KEY), globalMutate(ARCHIVES_KEY)]);
+
+// ---- Archives --------------------------------------------------------------
+
+export type ArchivedMonth = {
+  id: string;
+  num: number;
+  name: string;
+  topic: string;
+  topicShort: string;
+  blurb: string;
+  dateISO: string;
+  dateLabel: string;
+  timeLabel: string;
+  location: string;
+  status: "current" | "archived";
+  winnerLabel: string | null;
+  archivedAt: string | null;
+  books: AppBook[];
+};
+
+const ARCHIVES_KEY = "/api/months/archives";
+
+export function useArchives() {
+  const { data, error, isLoading, mutate } = useSWR<{ months: ArchivedMonth[] }>(
+    ARCHIVES_KEY,
+    fetcher,
+    {
+      refreshInterval: 10000,
+      revalidateOnFocus: true,
+    }
+  );
+  return { months: data?.months, error, isLoading, refresh: mutate };
+}
 
 // ---- Mutation helpers ------------------------------------------------------
 
@@ -145,6 +179,29 @@ export const api = {
     timeLabel: string;
     location: string;
   }>) => patch("/api/month", body).then(refreshState),
+
+  archiveMonth: (body: {
+    next: {
+      name: string;
+      topic: string;
+      topicShort?: string;
+      blurb?: string;
+      dateISO: string;
+      dateLabel: string;
+      timeLabel: string;
+      location?: string;
+    };
+    books: Array<{
+      readerId: "p" | "l";
+      pickerId: "p" | "l";
+      title: string;
+      subtitle?: string;
+      author?: string;
+      year?: number | null;
+      pages?: number;
+      coverGlyph?: string;
+    }>;
+  }) => post("/api/months/archive", body).then(refreshState),
 };
 
 // ---- Local-only UI preferences ---------------------------------------------

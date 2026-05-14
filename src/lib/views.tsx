@@ -5,7 +5,6 @@ import Image from "next/image";
 import {
   PALETTE,
   readers,
-  shelfMonths,
   type Reader,
 } from "@/data/books";
 import {
@@ -14,6 +13,7 @@ import {
   type AppNote,
   type AppPrompt,
   type AppTopic,
+  type ArchivedMonth,
   formatDateLabel,
   formatTimeLabel,
   toDateTimeLocalValue,
@@ -563,7 +563,20 @@ export function VotePanel({
 
 // ---- ShelfRow / FocusWrap / DiscussionView / ReadersView -------------------
 
-export function ShelfRow() {
+function shortMonthLabel(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+}
+
+export function ShelfRow({ months }: { months: ArchivedMonth[] | undefined }) {
+  const list = months ?? [];
+  // Newest first: API already returns DESC by num. Display oldest → newest so
+  // the user reads the shelf left-to-right chronologically.
+  const ordered = [...list].sort((a, b) => a.num - b.num);
+  const finished = ordered.filter((m) => m.status === "archived").length;
+  const inProgress = ordered.filter((m) => m.status === "current").length;
+  const tbdCount = Math.max(0, 5 - ordered.length);
+
   return (
     <div style={{ background: PALETTE.taupeDeep, borderRadius: 20, padding: 22, color: PALETTE.cream }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 16, gap: 12, flexWrap: "wrap" }}>
@@ -571,20 +584,83 @@ export function ShelfRow() {
           <div style={{ fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase", color: "rgba(242,234,224,.6)", fontWeight: 800 }}>the shelf</div>
           <div className="pbc-display" style={{ fontSize: 28, color: PALETTE.cream, marginTop: -2 }}>our reading history</div>
         </div>
-        <span style={{ fontSize: 13, opacity: 0.8 }}>0 finished · 1 in progress · ∞ to go</span>
+        <span style={{ fontSize: 13, opacity: 0.8 }}>{finished} finished · {inProgress} in progress · ∞ to go</span>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14 }}>
-        {shelfMonths.map((m, i) => (
-          <div key={i} style={{ background: m.filled === "current" ? PALETTE.cream : "rgba(0,0,0,.18)", color: m.filled === "current" ? PALETTE.espresso : "rgba(242,234,224,.5)", borderRadius: 14, padding: 14, border: m.filled ? "none" : "2px dashed rgba(242,234,224,.25)", minHeight: 120, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-            <div style={{ fontSize: 10, letterSpacing: ".12em", textTransform: "uppercase", fontWeight: 800, opacity: 0.8 }}>{m.label}</div>
-            {m.filled === "current" ? (
-              <>
-                <div className="pbc-display" style={{ fontSize: 20, marginTop: 8, color: PALETTE.espresso }}>{m.topic}</div>
-                <div style={{ fontSize: 11, marginTop: 4, color: PALETTE.midBrown }}>currently reading</div>
-              </>
-            ) : (
-              <div className="pbc-hand" style={{ fontSize: 20, marginTop: 12 }}>tbd</div>
-            )}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
+        {ordered.map((m) => {
+          const isCurrent = m.status === "current";
+          return (
+            <div
+              key={m.id}
+              style={{
+                background: isCurrent ? PALETTE.cream : PALETTE.paper,
+                color: PALETTE.espresso,
+                borderRadius: 14,
+                padding: 14,
+                minHeight: 160,
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+                boxShadow: isCurrent ? "0 6px 16px rgba(0,0,0,.18)" : "none",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                <div style={{ fontSize: 10, letterSpacing: ".12em", textTransform: "uppercase", fontWeight: 800, color: PALETTE.taupeDark }}>{shortMonthLabel(m.dateISO)}</div>
+                {isCurrent && (
+                  <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: PALETTE.taupeDeep, background: "rgba(45,31,21,.08)", padding: "2px 6px", borderRadius: 999 }}>now</span>
+                )}
+              </div>
+              <div className="pbc-display" style={{ fontSize: 22, color: PALETTE.espresso, lineHeight: 1, margin: "2px 0" }}>{m.topic}</div>
+              <div style={{ display: "flex", gap: 6, marginTop: 2 }}>
+                {m.books.map((b) => (
+                  <div
+                    key={b.id}
+                    title={`${b.title}${b.author ? ` — ${b.author}` : ""}`}
+                    style={{
+                      flex: 1,
+                      minHeight: 56,
+                      borderRadius: 4,
+                      background: `linear-gradient(135deg, ${b.coverHue} 0%, ${b.coverHue} 60%, rgba(0,0,0,.2) 100%)`,
+                      color: b.coverAccent,
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      padding: "6px 8px",
+                      boxShadow: "0 4px 10px rgba(45,31,21,.18)",
+                    }}
+                  >
+                    <span style={{ fontSize: 18, opacity: 0.9 }}>{b.coverGlyph}</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, lineHeight: 1.1, textTransform: "uppercase", letterSpacing: ".04em" }}>
+                      {b.title.slice(0, 30)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {!isCurrent && m.winnerLabel && (
+                <div style={{ fontSize: 11, color: PALETTE.midBrown, marginTop: "auto" }}>
+                  voted next: <strong>{m.winnerLabel}</strong>
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {Array.from({ length: tbdCount }).map((_, i) => (
+          <div
+            key={`tbd-${i}`}
+            style={{
+              background: "rgba(0,0,0,.18)",
+              color: "rgba(242,234,224,.5)",
+              borderRadius: 14,
+              padding: 14,
+              border: "2px dashed rgba(242,234,224,.25)",
+              minHeight: 160,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <div className="pbc-hand" style={{ fontSize: 22 }}>tbd</div>
           </div>
         ))}
       </div>

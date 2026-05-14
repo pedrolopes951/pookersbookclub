@@ -1,5 +1,6 @@
 "use client";
-import { readers } from "@/data/books";
+import { useState } from "react";
+import { readers, PALETTE } from "@/data/books";
 import {
   MonthStrip,
   BookPanel,
@@ -11,24 +12,25 @@ import {
   api,
   daysUntil,
   useAppState,
+  useArchives,
   useVotingAs,
 } from "@/lib/state";
+import ArchiveModal from "@/components/archive-modal";
 
 export default function NowPage() {
   const { data } = useAppState();
+  const { months: archives } = useArchives();
   const [votingAs, setVotingAs] = useVotingAs();
+  const [archiveOpen, setArchiveOpen] = useState(false);
 
   if (!data) return <Loading />;
 
   const { month, books, notes, topics } = data;
   const [Pedro, Laura] = readers;
-  // book read by Laura was picked by Pedro (reader_id='l'), and vice versa
   const bookForLaura = books.find((b) => b.readerId === "l");
   const bookForPedro = books.find((b) => b.readerId === "p");
   const notesByReader = notes.reduce<{ a: number; b: number }>(
     (acc, n) => {
-      // who=0 → Pedro reads bookB (selfish gene), so it's Pedro's note
-      // who=1 → Laura reads bookA, so Laura's note
       if (n.who === 0) acc.b += 1;
       else acc.a += 1;
       return acc;
@@ -79,7 +81,36 @@ export default function NowPage() {
           dateLabel={month.dateLabel}
         />
       </div>
-      <ShelfRow />
+
+      <ShelfRow months={archives} />
+
+      <div style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
+        <button
+          type="button"
+          onClick={() => setArchiveOpen(true)}
+          style={{
+            background: PALETTE.espresso,
+            color: PALETTE.cream,
+            border: "none",
+            borderRadius: 999,
+            padding: "12px 26px",
+            fontWeight: 800,
+            fontSize: 14,
+            cursor: "pointer",
+            letterSpacing: ".04em",
+            boxShadow: "0 10px 24px rgba(45,31,21,.22)",
+          }}
+        >
+          ✓ complete {month.name} → start next month
+        </button>
+      </div>
+
+      <ArchiveModal
+        open={archiveOpen}
+        onClose={() => setArchiveOpen(false)}
+        month={month}
+        topics={topics}
+      />
     </>
   );
 }

@@ -53,12 +53,6 @@ export type NextTopic = {
   votes: number;
 };
 
-export type ShelfMonth = {
-  label: string;
-  topic: string;
-  filled: "current" | "past" | false;
-};
-
 export const readers: Reader[] = [
   {
     id: "p",
@@ -146,10 +140,3 @@ export const nextTopics: NextTopic[] = [
   { id: "t6", label: "Philosophy", emoji: "🦉", votes: 0 },
 ];
 
-export const shelfMonths: ShelfMonth[] = [
-  { label: "May 26", topic: "Biology", filled: "current" },
-  { label: "Jun 26", topic: "???", filled: false },
-  { label: "Jul 26", topic: "???", filled: false },
-  { label: "Aug 26", topic: "???", filled: false },
-  { label: "Sep 26", topic: "???", filled: false },
-];
