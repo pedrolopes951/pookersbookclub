@@ -563,8 +563,11 @@ export function VotePanel({
 
 // ---- ShelfRow / FocusWrap / DiscussionView / ReadersView -------------------
 
-function shortMonthLabel(iso: string): string {
-  const d = new Date(iso);
+function shortMonthLabel(m: ArchivedMonth): string {
+  // Prefer the user-set month name (e.g. "May 2026") so editing the discussion
+  // date later doesn't change which month a card represents on the shelf.
+  if (m.name && m.name.trim()) return m.name;
+  const d = new Date(m.dateISO);
   return d.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
 }
 
@@ -605,7 +608,7 @@ export function ShelfRow({ months }: { months: ArchivedMonth[] | undefined }) {
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                <div style={{ fontSize: 10, letterSpacing: ".12em", textTransform: "uppercase", fontWeight: 800, color: PALETTE.taupeDark }}>{shortMonthLabel(m.dateISO)}</div>
+                <div style={{ fontSize: 10, letterSpacing: ".12em", textTransform: "uppercase", fontWeight: 800, color: PALETTE.taupeDark }}>{shortMonthLabel(m)}</div>
                 {isCurrent && (
                   <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: PALETTE.taupeDeep, background: "rgba(45,31,21,.08)", padding: "2px 6px", borderRadius: 999 }}>now</span>
                 )}
