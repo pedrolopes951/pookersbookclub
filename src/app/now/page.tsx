@@ -67,6 +67,7 @@ export default function NowPage() {
       <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 22, marginBottom: 28 }}>
         <NotesPanel
           notes={notes}
+          books={books}
           onAdd={(entry) => api.addNote(entry)}
           onDelete={(id) => api.deleteNote(id)}
         />

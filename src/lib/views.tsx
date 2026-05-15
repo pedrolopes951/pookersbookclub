@@ -332,23 +332,30 @@ export function BookPanel({
 
 export function NotesPanel({
   notes,
+  books,
   onAdd,
   onDelete,
 }: {
   notes: AppNote[];
-  onAdd: (entry: { who: number; page: number; text: string }) => void | Promise<unknown>;
+  books: AppBook[];
+  onAdd: (entry: { who: number; page: number; text: string; bookId: string | null }) => void | Promise<unknown>;
   onDelete: (id: string) => void | Promise<unknown>;
 }) {
   const [open, setOpen] = useState(false);
   const [who, setWho] = useState<number>(0);
   const [page, setPage] = useState<string>("");
   const [text, setText] = useState<string>("");
-  const reset = () => { setPage(""); setText(""); setOpen(false); };
+  const [bookId, setBookId] = useState<string | null>(null);
+  const whoReaderId = readers[who]?.id;
+  const bookForWho = books.find((b) => b.readerId === whoReaderId) ?? books[0];
+  const selectedBookId = bookId ?? bookForWho?.id ?? null;
+  const bookById = (id: string | null) => (id ? books.find((b) => b.id === id) : undefined);
+  const reset = () => { setPage(""); setText(""); setBookId(null); setOpen(false); };
   const submit = async () => {
     const trimmed = text.trim();
     if (!trimmed) return;
     const pg = Math.max(0, parseInt(page, 10) || 0);
-    await onAdd({ who, page: pg, text: trimmed });
+    await onAdd({ who, page: pg, text: trimmed, bookId: selectedBookId });
     reset();
   };
 
@@ -378,6 +385,20 @@ export function NotesPanel({
             })}
             <input type="number" min={0} value={page} onChange={(e) => setPage(e.target.value)} placeholder="page" style={{ width: 80, marginLeft: "auto", border: "1.5px solid rgba(45,31,21,.18)", borderRadius: 10, padding: "6px 10px", fontFamily: "inherit", fontSize: 13, background: "#fff", color: PALETTE.espresso }} />
           </div>
+          {books.length > 0 && (
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <span style={{ fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", fontWeight: 800, color: PALETTE.taupeDark }}>book</span>
+              {books.map((b) => {
+                const on = selectedBookId === b.id;
+                return (
+                  <button key={b.id} type="button" onClick={() => setBookId(b.id)} style={{ display: "flex", alignItems: "center", gap: 6, background: on ? PALETTE.espresso : "transparent", color: on ? PALETTE.cream : PALETTE.espresso, border: `1.5px solid ${on ? PALETTE.espresso : "rgba(45,31,21,.2)"}`, borderRadius: 999, padding: "4px 12px", cursor: "pointer", fontWeight: 700, fontSize: 12, maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={b.title}>
+                    <span aria-hidden style={{ fontSize: 14 }}>{b.coverGlyph}</span>
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{b.title}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
           <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="what struck you?" rows={2} style={{ border: "1.5px solid rgba(45,31,21,.18)", borderRadius: 10, padding: "8px 12px", fontFamily: "inherit", fontSize: 13, resize: "vertical", background: "#fff", color: PALETTE.espresso }} />
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
             <button type="button" onClick={reset} style={{ background: "transparent", color: PALETTE.taupeDark, border: "1.5px solid rgba(45,31,21,.2)", borderRadius: 999, padding: "6px 14px", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>cancel</button>
@@ -394,6 +415,7 @@ export function NotesPanel({
       ) : (
         notes.map((n) => {
           const r = readers[n.who];
+          const b = bookById(n.bookId);
           return (
             <div key={n.id} style={{ background: PALETTE.paper, borderRadius: 14, padding: "12px 16px", display: "flex", gap: 12, alignItems: "flex-start", borderLeft: `4px solid ${r.color}` }}>
               <Avatar reader={r} size={28} />
@@ -401,6 +423,12 @@ export function NotesPanel({
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
                   <span style={{ fontWeight: 800, fontSize: 13, color: PALETTE.espresso }}>{r.name}</span>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    {b && (
+                      <span title={b.title} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: PALETTE.taupeDark, fontWeight: 700, maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <span aria-hidden>{b.coverGlyph}</span>
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{b.title}</span>
+                      </span>
+                    )}
                     <span style={{ fontSize: 11, color: PALETTE.taupeDark, fontWeight: 700 }}>p. {n.page}</span>
                     <button type="button" onClick={() => onDelete(n.id)} aria-label="delete note" title="delete note" style={{ background: "transparent", border: "none", color: PALETTE.taupeDark, cursor: "pointer", fontSize: 14, lineHeight: 1, padding: 2, opacity: 0.6 }}>×</button>
                   </div>

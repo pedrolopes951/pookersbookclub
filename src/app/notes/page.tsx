@@ -9,6 +9,7 @@ export default function NotesPage() {
       {data ? (
         <NotesPanel
           notes={data.notes}
+          books={data.books}
           onAdd={(entry) => api.addNote(entry)}
           onDelete={(id) => api.deleteNote(id)}
         />

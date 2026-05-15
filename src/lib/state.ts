@@ -39,6 +39,7 @@ export type AppNote = {
   who: number;
   page: number;
   text: string;
+  bookId: string | null;
 };
 
 export type AppTopic = {
@@ -148,7 +149,7 @@ const del = async (url: string) => {
 };
 
 export const api = {
-  addNote: (body: { who: number; page: number; text: string }) =>
+  addNote: (body: { who: number; page: number; text: string; bookId: string | null }) =>
     post("/api/notes", body).then(refreshState),
   deleteNote: (id: string) => del(`/api/notes/${id}`).then(refreshState),
 

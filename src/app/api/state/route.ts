@@ -27,7 +27,7 @@ export async function GET() {
       ORDER BY reader_id DESC
     `,
     sql`
-      SELECT id, who, page, text, created_at
+      SELECT id, who, page, text, book_id, created_at
       FROM notes WHERE month_id = ${monthId}
       ORDER BY created_at ASC
     `,
@@ -89,6 +89,7 @@ export async function GET() {
       who: n.who,
       page: n.page,
       text: n.text,
+      bookId: n.book_id,
     })),
     topics: topics.map((t) => {
       const voters = votesByTopic.get(t.id as string) ?? [];
